@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <title>Invigilator Diary — Garden City University</title>
+  <style>
+    :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#0f172a;background:#eef2f7;font-synthesis:none}*{box-sizing:border-box}body{margin:0}.topbar{background:#0f172a;color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.brand{font-size:18px;font-weight:800}.brand small{display:block;color:#a5b4fc;font-size:12px;margin-top:3px}.actions{display:flex;gap:8px;flex-wrap:wrap}button{border:0;border-radius:8px;padding:10px 14px;font:inherit;font-weight:700;cursor:pointer}.primary{background:#4f46e5;color:white}.light{background:#fff;color:#334155}.layout{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:20px}.panel{background:#fff;border:1px solid #dbe3ec;border-radius:14px;padding:20px;box-shadow:0 4px 16px #0f172a0b}.panel h1,.panel h2{margin:0 0 8px}.muted{color:#64748b;font-size:14px;line-height:1.5}.field{display:block;margin:14px 0;font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.04em}.field input,.field textarea{display:block;width:100%;margin-top:6px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font:14px inherit;color:#0f172a}.field textarea{min-height:180px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stats{display:flex;gap:10px;margin:16px 0}.stat{flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;text-align:center}.stat b{display:block;font-size:22px}.stat span{font-size:11px;color:#64748b;font-weight:800;text-transform:uppercase}.exam{border:1px solid #cbd5e1;padding:14px;border-radius:10px;margin:10px 0}.exam h3{margin:0 0 6px}.exam p{margin:5px 0;color:#475569;font-size:13px}.empty{padding:40px 10px;text-align:center;color:#64748b}.notice{font-size:12px;color:#64748b;margin-top:16px}@media(max-width:800px){.layout{grid-template-columns:1fr;margin:14px auto}.topbar{padding:14px}.stats{flex-wrap:wrap}}@media print{body{background:#fff}.topbar,.editor,.actions,.notice{display:none!important}.layout{display:block;margin:0;padding:0}.panel{border:0;box-shadow:none;padding:0}.preview{display:block!important}.exam{break-inside:avoid;border:1px solid #000}.exam h3{font-size:18px}}
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="brand">📋 Invigilator Diary<small>Garden City University · Examination Management</small></div><div class="actions"><button class="light" id="printBtn" type="button">🖨 Print</button><button class="primary" id="addBtn" type="button">＋ Add exam</button></div></header>
+  <main class="layout">
+    <section class="panel editor"><h1>Exam details</h1><p class="muted">Add an examination and its students. Your entries are saved in this browser.</p>
+      <form id="examForm">
+        <label class="field">Diary title<input name="title" placeholder="Invigilation Diary" required></label>
+        <div class="grid"><label class="field">Date<input name="date" type="date"></label><label class="field">Room<input name="room" placeholder="Room number"></label></div>
+        <label class="field">Course title<input name="course" placeholder="Course title" required></label>
+        <div class="grid"><label class="field">Course code<input name="code" placeholder="Course code"></label><label class="field">Time<input name="time" placeholder="e.g. 9:00 AM – 12:00 PM"></label></div>
+        <label class="field">Students — one per line (registration number, name)<textarea name="students" placeholder="25MSBT101, Student Name"></textarea></label>
+        <div class="actions"><button class="primary" type="submit">Save exam</button><button class="light" id="resetBtn" type="reset">Clear form</button></div>
+      </form>
+      <p class="notice">Data is stored locally in this browser only. It is not shared or synchronized to other devices.</p>
+    </section>
+    <section class="panel preview"><h2>Exam list</h2><p class="muted">Saved examinations and student counts.</p><div class="stats"><div class="stat"><b id="examCount">0</b><span>Exams</span></div><div class="stat"><b id="studentCount">0</b><span>Students</span></div></div><div id="examList" class="empty">No exams added yet.</div></section>
+  </main>
+  <script>
+    const STORAGE_KEY='gcu_invigilator_diary_exams';
+    const form=document.getElementById('examForm');
+    let exams=[];
+    try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');if(Array.isArray(saved))exams=saved;}catch(_){exams=[];}
+    const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const studentsFor=exam=>(exam.students||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    function render(){
+      document.getElementById('examCount').textContent=exams.length;
+      document.getElementById('studentCount').textContent=exams.reduce((n,x)=>n+studentsFor(x).length,0);
+      const target=document.getElementById('examList');
+      if(!exams.length){target.className='empty';target.textContent='No exams added yet.';return;}
+      target.className='';
+      target.innerHTML=exams.map((x,i)=>`<article class="exam"><h3>${esc(x.course||'Untitled exam')}</h3><p><b>${esc(x.title||'Invigilation Diary')}</b></p><p>${esc(x.date||'Date not set')} · ${esc(x.time||'Time not set')} · ${esc(x.room||'Room not set')}</p><p>${esc(x.code||'')} · ${studentsFor(x).length} student(s)</p><button class="light" type="button" data-delete="${i}" aria-label="Delete ${esc(x.course)}">Delete</button></article>`).join('');
+    }
+    function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(exams));}catch(_){alert('Could not save. Your browser storage may be full or disabled.');}}
+    form.addEventListener('submit',e=>{e.preventDefault();const data=new FormData(form);exams.push({title:data.get('title'),date:data.get('date'),room:data.get('room'),course:data.get('course'),code:data.get('code'),time:data.get('time'),students:data.get('students')});save();render();form.reset();});
+    document.getElementById('examList').addEventListener('click',e=>{const btn=e.target.closest('[data-delete]');if(!btn)return;exams.splice(Number(btn.dataset.delete),1);save();render();});
+    document.getElementById('printBtn').addEventListener('click',()=>window.print());
+    document.getElementById('addBtn').addEventListener('click',()=>{document.querySelector('.editor').scrollIntoView({behavior:'smooth'});form.elements.title.focus();});
+    render();
+  </script>
+</body>
+</html>
